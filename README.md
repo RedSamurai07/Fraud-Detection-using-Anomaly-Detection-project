@@ -11,11 +11,19 @@
 - [Recommendations](recommendations)
 
 ### Project Overview
+The project focuses on building a robust machine learning system to identify fraudulent credit card transactions. Given the sensitive nature of financial data, the features provided are principal components (V1–V28) resulting from a PCA transformation, along with the transaction time and amount. The primary challenge addressed is the extreme class imbalance, where fraudulent transactions represent a tiny fraction of the total dataset.
 
 ### Executive Summary
 
+The analysis demonstrates that traditional metrics like "Accuracy" are misleading for fraud detection due to the Accuracy Paradox—a model predicting all transactions as legitimate would achieve 99.83% accuracy but fail to catch any fraud. To counter this, the project evaluates models based on Precision-Recall (PR) AUC and F-beta scores, prioritizing the identification of fraudulent cases while managing the operational costs of false alarms. The proposed solution includes a multi-tiered decisioning framework (Approve/Review/Block) to balance financial loss with customer experience.
 
 ### Goal
+
+- Primary Objective: Develop a predictive model to classify transactions as fraudulent or legitimate with high precision and recall.
+
+- Financial Goal: Minimize the total economic impact, which includes the average fraud loss ($122.21 per transaction) and the cost of investigating false positives ($15.00 for customer service and $5.00 for analyst review).
+
+- Operational Goal: Create an automated system capable of making real-time decisions to block or flag transactions for manual investigation.
 
 ### Data structure and initial checks
 [Dataset](https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud)
@@ -24,6 +32,10 @@
 
 | Features | Description | Data types |
 | -------- | -------- | -------- | 
+| Time | Seconds elapsed between the transaction and the first transaction in the dataset. | float64 | 
+| V1 – V28 | Numerical features resulting from a PCA transformation to protect user identity and sensitive information. | float64 | 
+| Amount | The transaction amount, which can be used for cost-sensitive learning. | float64 | 
+| Class | The target variable: 1 for fraudulent transactions and 0 for legitimate ones. | int64 | 
 
 ### Tools
 
