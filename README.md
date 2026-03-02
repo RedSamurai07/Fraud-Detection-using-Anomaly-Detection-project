@@ -2032,5 +2032,50 @@ FROM base;
 
 ### Insights:
 
+- Extreme Class Imbalance: The dataset is highly skewed, with fraud transactions making up only 0.1727% of the total data (492 fraud cases vs. 284,315 legitimate ones).
+
+- The Accuracy Paradox: A naive model that simply classifies every transaction as "Not Fraud" would achieve an 99.83% accuracy but would fail to detect a single fraudulent transaction, resulting in a total financial loss of approximately £60,127 in this dataset.
+
+- Transaction Profile: While the average transaction amount is $88.35, the average loss from a fraudulent transaction is higher at $122.21.
+
+- Handling Skewed Features: The "Amount" feature contains significant outliers (ranging from $0 to over $25,000). The code utilizes RobustScaler to scale this feature, as it is less sensitive to outliers than standard scaling.
+
+- Anonymized Features: The features $V1$ through $V28$ are results of a PCA transformation, meaning they are already decorrelated and scaled, though their physical meaning is hidden for privacy.
+
+- Advanced Metrics Over Accuracy: Because of the imbalance, the notebook shifts focus from accuracy to:
+
+a). Precision-Recall AUC (PR-AUC): A better indicator of performance on imbalanced datasets than the standard ROC-AUC.
+
+b). F-beta Score: Used to weight Recall more heavily than Precision, prioritizing the detection of fraud even if it increases false alarms slightly.
+
+Imbalance Handling Techniques: The code sets up imblearn pipelines to test several strategies, including:
+
+a). SMOTE (Over-sampling): Creating synthetic fraud examples.
+
+b). Random Under-sampling: Reducing the majority class to balance the training set.
+
+- Algorithmic Approach: The notebook prepares a variety of models, from traditional Logistic Regression and Random Forest to advanced gradient boosting (XGBoost, LightGBM) and anomaly detection methods like Isolation Forest.
+
+- The analysis introduces a "Cost Function" to evaluate models based on real-world business impact rather than just statistical error:
+
+a). False Positive Cost ($15.00): The administrative cost of investigating a legitimate transaction that was flagged.
+
+b). False Negative Cost ($122.21): The direct financial loss of missing a fraudulent transaction.
+
+Investigation Cost ($5.00): The standard overhead for any flagged transaction.
+
 ### Recommendations
 
+- Optimize for Financial Impact: Instead of selecting a model based on the highest F1-score, select the model and probability threshold that minimizes the Total Financial Cost (False Positives + False Negatives).
+
+- Deployment of Explainable AI: Integrate SHAP (Shapley Additive Explanations) to provide "reason codes" for why a transaction was flagged. This helps investigators understand model decisions and provides transparency if a customer's card is blocked.
+
+- Tiered Response System: Use the model's probability scores to trigger different actions:
+
+a). Low Score: Auto-approve.
+
+b). Medium Score: Trigger Multi-Factor Authentication (MFA) or "Step-up" verification.
+
+c). High Score: Decline transaction and alert a human investigator.
+
+- Continuous Re-sampling: Regularly retrain the model using SMOTETomek or ADASYN to ensure the model stays robust against evolving fraud patterns while maintaining a clean decision boundary.
