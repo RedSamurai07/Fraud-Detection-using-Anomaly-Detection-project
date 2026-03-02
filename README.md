@@ -1489,7 +1489,546 @@ print("="*60)
 
 **SQL**
 
+When you are dealing with big datasize, we have found one of the best way to upload the complete datasize in BIg Query is mentioned below:
 
+- It is by converting the `csv` file into `7Z` or GZ file format to compress it. In our case, with `creditcard.csv` we have converted the file into `creditcard.csv.gz` b y using the below command on the VS code terminal or you can navigate it on Power shell command.
+
+  ``` python
+  zcat large_file.gz | split -l 1000000 --filter='gzip > $FILE.gz' - chunk_
+  ```
+  
+- As the data size if huge, we need to split the dataset in small chunks of datafiles for storage issue as mentioned below.
+``` python
+import pandas as pd
+# Define the file name and the number of rows per chunk
+file_name = 'creditcard.csv.gz'
+chunk_size = 40000  # Adjust this number based on your RAM
+
+# Create an iterator to read the compressed CSV in chunks
+data_iterator = pd.read_csv(file_name, compression='gzip', chunksize=chunk_size)
+
+# Loop through the chunks and save them as separate files
+for i, chunk in enumerate(data_iterator):
+    output_name = f'creditcard_part_{i}.csv'
+    chunk.to_csv(output_name, index=False)
+    print(f'Saved: {output_name}')
+```
+
+- Now, we upload the each tables on undet the project name specified on [Big Query Google cloud](https://cloud.google.com/bigquery) and also on the table format pane under additional settings, we choose column headers as `V2` in order to remove unnecessary spaces and skip rows as 1 for file formating purpose.
+
+- Finally, we need to combine all the files as one table as mentioned below.
+``` sql
+CREATE TABLE `fraud-project-489006.fraud_detect.complete_table` AS
+SELECT * FROM `fraud-project-489006.fraud_detect.table_*`
+WHERE _TABLE_SUFFIX BETWEEN '1' AND '6'
+```
+
+- Now, let's haver a final check on the data for the complete table we have created.
+``` sql
+SELECT
+*
+from
+`fraud_detect.complete_table`
+```
+<img width="1599" height="822" alt="image" src="https://github.com/user-attachments/assets/7b976d9a-da33-4598-b0d5-162c3b294483" /><img width="1148" height="383" alt="image" src="https://github.com/user-attachments/assets/a6ddc690-ce82-4637-982d-ecb3c3cf1032" /><img width="1160" height="396" alt="image" src="https://github.com/user-attachments/assets/5ad65573-8083-45d5-829b-309a13828fdb" /><img width="683" height="394" alt="image" src="https://github.com/user-attachments/assets/0a94793c-adfe-43b7-af98-b8bb68fce25a" />
+
+1). Accuarcy Paradox
+``` sql
+WITH class_counts AS (
+    SELECT
+        CAST(Class AS STRING) AS Class_ID, -- Cast to string to allow "N/A" or Model names later
+        COUNT(*)                                 AS Transaction_Count,
+        COUNT(*) * 100.0 / SUM(COUNT(*)) OVER () AS Pct_Of_Total
+    FROM `fraud_detect.complete_table`
+    WHERE Class IS NOT NULL  -- Removes the Row 1 'null' from your image
+    GROUP BY Class
+)
+
+SELECT
+    Class_ID,
+    CASE Class_ID WHEN '0' THEN 'Legitimate' ELSE 'Fraud' END AS Class_Label,
+    Transaction_Count,
+    ROUND(Pct_Of_Total, 4) AS Pct_Of_Total
+FROM class_counts
+
+UNION ALL
+
+-- Summary Row: Replacing NULLs with descriptive placeholders or 0
+SELECT
+    'SUMMARY' AS Class_ID, 
+    'Naive Model Accuracy' AS Class_Label,
+    0 AS Transaction_Count, -- Replaces the NULL in Transaction_Count
+    ROUND((SELECT COUNT(*) FROM `fraud_detect.complete_table` WHERE Class = 0) * 100.0 
+          / (SELECT COUNT(*) FROM `fraud_detect.complete_table`), 4) AS Pct_Of_Total
+FROM (SELECT 1)
+```
+<img width="1006" height="268" alt="image" src="https://github.com/user-attachments/assets/b4d6da68-e8c6-4f75-8c05-5bf7166d2670" />
+
+2).Data Quality Audit
+``` sql
+SELECT
+  COUNT(*) AS Total_Rows,
+  SUM(CASE WHEN Amount IS NULL THEN 1 ELSE 0 END) AS Null_Amount,
+  SUM(CASE WHEN Class IS NULL THEN 1 ELSE 0 END) AS Null_Class,
+  SUM(CASE WHEN V1 IS NULL THEN 1 ELSE 0 END) AS Null_V1,
+  MIN(Amount) AS Min_Amount,
+  MAX(Amount) AS Max_Amount,
+  AVG(Amount) AS Avg_Amount,
+  STDDEV(Amount) AS Std_Amount,
+  SUM(Class) AS Total_Fraud,
+  COUNT(*) - SUM(Class) AS Total_Legit,
+  ROUND(AVG(Class) * 100, 4) AS Fraud_Rate_Pct,
+  SUM(CASE WHEN Amount < 1 THEN 1 ELSE 0 END) AS Micro_Transactions,
+  SUM(CASE WHEN Amount > 1000 THEN 1 ELSE 0 END) AS High_Value_Transactions
+FROM `fraud_detect.complete_table`
+WHERE Class IS NOT NULL AND Amount IS NOT NULL;
+```
+<img width="1473" height="172" alt="image" src="https://github.com/user-attachments/assets/6fd4f736-9853-4433-9dda-4782cc3f9a25" /><img width="622" height="65" alt="image" src="https://github.com/user-attachments/assets/e271d35f-d806-45c4-939d-bbab1de4286b" />
+
+
+3).Fraud Rate by hour of day
+``` sql
+
+WITH hourly_data AS (
+    SELECT
+        MOD(CAST(creditcard_csv / 3600 AS INT64), 24)      AS Hour_Of_Day,
+        Class,
+        Amount
+    FROM `fraud_detect.complete_table`
+),
+
+hourly_stats AS (
+    SELECT
+        Hour_Of_Day,
+        COUNT(*)                                 AS Total_Transactions,
+        SUM(Class)                               AS Fraud_Count,
+        COUNT(*) - SUM(Class)                    AS Legit_Count,
+        ROUND(AVG(Class) * 100, 4)               AS Fraud_Rate_Pct,
+        ROUND(AVG(Amount), 2)                    AS Avg_Amount,
+        ROUND(AVG(CASE WHEN Class=1 THEN Amount END), 2)
+                                                 AS Avg_Fraud_Amount,
+        ROUND(SUM(CASE WHEN Class=1 THEN Amount ELSE 0 END), 2)
+                                                 AS Total_Fraud_Amount
+    FROM hourly_data
+    GROUP BY Hour_Of_Day
+)
+
+SELECT
+    Hour_Of_Day,
+    CASE
+        WHEN Hour_Of_Day BETWEEN 0 AND 5   THEN 'Night (00-05)'
+        WHEN Hour_Of_Day BETWEEN 6 AND 11  THEN 'Morning (06-11)'
+        WHEN Hour_Of_Day BETWEEN 12 AND 17 THEN 'Afternoon (12-17)'
+        ELSE                                    'Evening (18-23)'
+    END                                          AS Time_Period,
+    Total_Transactions,
+    Fraud_Count,
+    Fraud_Rate_Pct,
+    Avg_Amount,
+    Avg_Fraud_Amount,
+    Total_Fraud_Amount,
+    -- Rank hours by fraud rate
+    RANK() OVER (ORDER BY Fraud_Rate_Pct DESC)  AS Fraud_Rate_Rank,
+    -- Flag high-risk hours
+    CASE WHEN Fraud_Rate_Pct > 0.3 THEN 'HIGH_RISK'
+         WHEN Fraud_Rate_Pct > 0.17 THEN 'ELEVATED'
+         ELSE 'NORMAL'
+    END                                          AS Risk_Flag
+FROM hourly_stats
+ORDER BY Hour_Of_Day;
+```
+<img width="939" height="579" alt="image" src="https://github.com/user-attachments/assets/d29571b9-d750-4ce4-a91e-fccddd7a770d" /><img width="715" height="476" alt="image" src="https://github.com/user-attachments/assets/4ee70f2e-5b1d-4ede-af86-8ec87c536e91" />
+
+
+4).Fraud Rate by Amount Bucket
+``` sql
+WITH bucketed AS (
+    SELECT
+        CASE
+            WHEN Amount < 1      THEN '1_Micro (<£1)'
+            WHEN Amount < 10     THEN '2_Small (£1-10)'
+            WHEN Amount < 50     THEN '3_Medium (£10-50)'
+            WHEN Amount < 100    THEN '4_Moderate (£50-100)'
+            WHEN Amount < 500    THEN '5_High (£100-500)'
+            WHEN Amount < 1000   THEN '6_Very High (£500-1K)'
+            ELSE                      '7_Premium (>£1K)'
+        END                                      AS Amount_Bucket,
+        Class,
+        Amount
+    FROM `fraud_detect.complete_table`
+)
+
+SELECT
+    Amount_Bucket,
+    COUNT(*)                                     AS Total_Transactions,
+    SUM(Class)                                   AS Fraud_Count,
+    ROUND(AVG(Class) * 100, 4)                   AS Fraud_Rate_Pct,
+    ROUND(AVG(Amount), 2)                        AS Avg_Amount,
+    ROUND(SUM(CASE WHEN Class=1 THEN Amount ELSE 0 END), 2)
+                                                 AS Total_Fraud_Value,
+    ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER(), 2)
+                                                 AS Pct_Of_All_Transactions,
+    ROUND(SUM(Class) * 100.0 / SUM(SUM(Class)) OVER(), 2)
+                                                 AS Pct_Of_All_Fraud,
+    -- Fraud concentration index (actual % fraud / expected % fraud)
+    ROUND(
+        AVG(Class)
+        / (SUM(SUM(Class)) OVER() / SUM(COUNT(*)) OVER()), 2
+    )                                            AS Fraud_Concentration_Index
+FROM bucketed
+GROUP BY Amount_Bucket
+ORDER BY Amount_Bucket;
+```
+
+<img width="949" height="381" alt="image" src="https://github.com/user-attachments/assets/3e6d4d64-7c5b-4eba-ad3f-f9cacb5350d4" /><img width="625" height="264" alt="image" src="https://github.com/user-attachments/assets/da7a6e40-a0d3-4039-8ca1-f72d529d24f3" />
+
+5).Rolling Window Fraud Rate by 1 hour
+``` sql
+WITH
+  time_windows AS (
+    SELECT
+      SUM(Class) AS Fraud_In_Window,
+      COUNT(*) AS Transactions_In_Window,
+      ROUND(AVG(Class) * 100, 4) AS Fraud_Rate_Pct,
+      ROUND(SUM(CASE WHEN Class = 1 THEN Amount ELSE 0 END), 2)
+        AS Fraud_Value_In_Window,
+      ROUND(AVG(Amount), 2) AS Avg_Amount_In_Window
+    FROM `fraud_detect.complete_table`
+  )
+SELECT
+  Fraud_In_Window,
+  Transactions_In_Window,
+  Fraud_Rate_Pct,
+  Fraud_Value_In_Window,
+  Avg_Amount_In_Window
+FROM time_windows;
+```
+<img width="919" height="130" alt="image" src="https://github.com/user-attachments/assets/4ba1e2e2-5bb1-44ab-997b-ac243f53916b" />
+
+6).Micro Transaction Fraud Analysis
+``` sql
+WITH micro_analysis AS (
+    SELECT
+        CASE WHEN Amount < 1 THEN 'Micro_Transaction'
+             ELSE 'Normal_Transaction' END        AS Transaction_Type,
+        Class,
+        Amount,
+        V14, V17
+    FROM `fraud_detect.complete_table`
+)
+
+SELECT
+    Transaction_Type,
+    COUNT(*)                                     AS Total_Count,
+    SUM(Class)                                   AS Fraud_Count,
+    ROUND(AVG(Class) * 100, 4)                   AS Fraud_Rate_Pct,
+    ROUND(AVG(Amount), 4)                        AS Avg_Amount,
+    ROUND(AVG(V14), 4)                           AS Avg_V14,
+    ROUND(AVG(V17), 4)                           AS Avg_V17,
+    -- Fraud rate index vs overall fraud rate
+    ROUND(AVG(Class) / 0.001727, 2)              AS Fraud_Rate_Index
+FROM micro_analysis
+GROUP BY Transaction_Type;
+
+-- Detailed micro-transaction fraud profile
+SELECT
+    ROUND(Amount, 2)                             AS Amount,
+    COUNT(*)                                     AS Occurrences,
+    SUM(Class)                                   AS Fraud_Count,
+    ROUND(AVG(Class) * 100, 2)                   AS Fraud_Rate_Pct
+FROM `fraud_detect.complete_table`
+WHERE Amount < 1
+GROUP BY ROUND(Amount, 2)
+ORDER BY Fraud_Rate_Pct DESC
+LIMIT 20;
+```
+<img width="702" height="429" alt="image" src="https://github.com/user-attachments/assets/11787dde-6858-436c-9451-d441401309cf" />
+
+7).V14 Distributin Analysis
+``` sql
+
+WITH v14_stats AS (
+    SELECT
+        Class,
+        CASE Class WHEN 0 THEN 'Legitimate' ELSE 'Fraud' END
+                                                 AS Class_Label,
+        COUNT(*)                                 AS Count,
+        ROUND(AVG(V14), 4)                       AS Mean_V14,
+        ROUND(STDDEV(V14), 4)                    AS Std_V14,
+        ROUND(MIN(V14), 4)                       AS Min_V14,
+        ROUND(MAX(V14), 4)                       AS Max_V14,
+        -- Percentiles using APPROX_QUANTILES (BigQuery)
+        APPROX_QUANTILES(V14, 4)[OFFSET(1)]      AS Q1_V14,
+        APPROX_QUANTILES(V14, 4)[OFFSET(2)]      AS Median_V14,
+        APPROX_QUANTILES(V14, 4)[OFFSET(3)]      AS Q3_V14
+    FROM `fraud_detect.complete_table`
+    GROUP BY Class
+)
+
+SELECT * FROM v14_stats;
+
+-- V14 threshold analysis: at what value does fraud risk spike?
+WITH v14_bucketed AS (
+    SELECT
+        ROUND(V14, 0)                            AS V14_Rounded,
+        Class,
+        Amount
+    FROM `fraud_detect.complete_table`
+    WHERE V14 BETWEEN -20 AND 10
+)
+
+SELECT
+    V14_Rounded,
+    COUNT(*)                                     AS Total,
+    SUM(Class)                                   AS Fraud_Count,
+    ROUND(AVG(Class) * 100, 3)                   AS Fraud_Rate_Pct,
+    ROUND(AVG(CASE WHEN Class=1 THEN Amount END), 2)
+                                                 AS Avg_Fraud_Amount
+FROM v14_bucketed
+GROUP BY V14_Rounded
+ORDER BY V14_Rounded;
+```
+<img width="925" height="489" alt="image" src="https://github.com/user-attachments/assets/d003b3f0-49f3-4925-bab1-138fd48341e6" />
+
+8).Running Cummulative Fraud Detection
+``` sql
+WITH fraud_totals AS (
+    SELECT
+        COUNT(*)                                 AS Total_Transactions,
+        SUM(Class)                               AS Total_Fraud_Count,
+        COUNT(*) - SUM(Class)                    AS Total_Legit_Count,
+        SUM(CASE WHEN Class=1 THEN Amount ELSE 0 END)
+                                                 AS Total_Fraud_Value,
+        AVG(CASE WHEN Class=1 THEN Amount END)   AS Avg_Fraud_Amount
+    FROM `fraud_detect.complete_table`
+)
+
+SELECT
+    'Scenario'                                   AS Label,
+    'No Detection (Baseline)'                    AS Scenario,
+    Total_Fraud_Count                            AS Fraud_Missed,
+    0                                            AS False_Alarms,
+    ROUND(Total_Fraud_Value, 2)                  AS Financial_Loss_GBP,
+    0.00                                         AS Savings_GBP
+FROM fraud_totals
+
+UNION ALL
+
+SELECT
+    'Scenario',
+    'Good Model (90% Recall, 10% FPR)',
+    ROUND(Total_Fraud_Count * 0.10)              AS Fraud_Missed,
+    ROUND(Total_Legit_Count * 0.10)              AS False_Alarms,
+    ROUND(Total_Fraud_Count * 0.10 * 122.21
+          + Total_Legit_Count * 0.10 * 15.00
+          + Total_Fraud_Count * 0.90 * 5.00, 2) AS Financial_Loss_GBP,
+    ROUND(Total_Fraud_Value * 0.90
+          - Total_Legit_Count * 0.10 * 15.00
+          - Total_Fraud_Count * 0.90 * 5.00, 2) AS Savings_GBP
+FROM fraud_totals
+
+UNION ALL
+
+SELECT
+    'Scenario',
+    'Perfect Model (100% Recall, 0% FPR)',
+    0                                            AS Fraud_Missed,
+    0                                            AS False_Alarms,
+    ROUND(Total_Fraud_Count * 5.00, 2)           AS Financial_Loss_GBP,
+    ROUND(Total_Fraud_Value
+          - Total_Fraud_Count * 5.00, 2)         AS Savings_GBP
+FROM fraud_totals;
+```
+<img width="878" height="224" alt="image" src="https://github.com/user-attachments/assets/b6b46940-c542-4b10-9cab-3515aa4d02d5" /><img width="312" height="131" alt="image" src="https://github.com/user-attachments/assets/b88c4d18-a775-4523-84e8-825a501dc58a" />
+
+
+9).Financial Exposure by Detection
+``` sql
+WITH feature_stats AS (
+    SELECT
+        'V1'  AS Feature, AVG(CASE WHEN Class=0 THEN V1  END) AS Legit_Mean,
+                          AVG(CASE WHEN Class=1 THEN V1  END) AS Fraud_Mean,
+                          STDDEV(V1)                           AS Overall_Std
+    FROM `fraud_detect.complete_table`
+    UNION ALL
+    SELECT 'V2',  AVG(CASE WHEN Class=0 THEN V2  END), AVG(CASE WHEN Class=1 THEN V2  END), STDDEV(V2)  FROM `fraud_detect.complete_table`
+    UNION ALL
+    SELECT 'V3',  AVG(CASE WHEN Class=0 THEN V3  END), AVG(CASE WHEN Class=1 THEN V3  END), STDDEV(V3)  FROM `fraud_detect.complete_table`
+    UNION ALL
+    SELECT 'V4',  AVG(CASE WHEN Class=0 THEN V4  END), AVG(CASE WHEN Class=1 THEN V4  END), STDDEV(V4)  FROM `fraud_detect.complete_table`
+    UNION ALL
+    SELECT 'V7',  AVG(CASE WHEN Class=0 THEN V7  END), AVG(CASE WHEN Class=1 THEN V7  END), STDDEV(V7)  FROM `fraud_detect.complete_table`
+    UNION ALL
+    SELECT 'V10', AVG(CASE WHEN Class=0 THEN V10 END), AVG(CASE WHEN Class=1 THEN V10 END), STDDEV(V10) FROM `fraud_detect.complete_table`
+    UNION ALL
+    SELECT 'V11', AVG(CASE WHEN Class=0 THEN V11 END), AVG(CASE WHEN Class=1 THEN V11 END), STDDEV(V11) FROM `fraud_detect.complete_table`
+    UNION ALL
+    SELECT 'V12', AVG(CASE WHEN Class=0 THEN V12 END), AVG(CASE WHEN Class=1 THEN V12 END), STDDEV(V12) FROM `fraud_detect.complete_table`
+    UNION ALL
+    SELECT 'V14', AVG(CASE WHEN Class=0 THEN V14 END), AVG(CASE WHEN Class=1 THEN V14 END), STDDEV(V14) FROM `fraud_detect.complete_table`
+    UNION ALL
+    SELECT 'V16', AVG(CASE WHEN Class=0 THEN V16 END), AVG(CASE WHEN Class=1 THEN V16 END), STDDEV(V16) FROM `fraud_detect.complete_table`
+    UNION ALL
+    SELECT 'V17', AVG(CASE WHEN Class=0 THEN V17 END), AVG(CASE WHEN Class=1 THEN V17 END), STDDEV(V17) FROM `fraud_detect.complete_table`
+    UNION ALL
+    SELECT 'V18', AVG(CASE WHEN Class=0 THEN V18 END), AVG(CASE WHEN Class=1 THEN V18 END), STDDEV(V18) FROM `fraud_detect.complete_table`
+    UNION ALL
+    SELECT 'V19', AVG(CASE WHEN Class=0 THEN V19 END), AVG(CASE WHEN Class=1 THEN V19 END), STDDEV(V19) FROM `fraud_detect.complete_table`
+    UNION ALL
+    SELECT 'Amount', AVG(CASE WHEN Class=0 THEN Amount END), AVG(CASE WHEN Class=1 THEN Amount END), STDDEV(Amount) FROM `fraud_detect.complete_table`
+)
+
+SELECT
+    Feature,
+    ROUND(Legit_Mean, 4)                         AS Legit_Mean,
+    ROUND(Fraud_Mean, 4)                         AS Fraud_Mean,
+    ROUND(ABS(Fraud_Mean - Legit_Mean), 4)       AS Absolute_Separation,
+    -- Effect size (Cohen's d approximation)
+    ROUND(ABS(Fraud_Mean - Legit_Mean) / NULLIF(Overall_Std, 0), 4)
+                                                 AS Effect_Size_Cohens_D,
+    RANK() OVER (ORDER BY ABS(Fraud_Mean - Legit_Mean) / NULLIF(Overall_Std, 0) DESC)
+                                                 AS Discriminative_Rank
+FROM feature_stats
+ORDER BY Discriminative_Rank;
+```
+<img width="1013" height="474" alt="image" src="https://github.com/user-attachments/assets/11e4d71e-0cf2-4525-886e-cb33658d1eff" /><img width="151" height="365" alt="image" src="https://github.com/user-attachments/assets/8091b149-69f9-47cf-b207-17a29c230e55" />
+
+10). Cost optimized Threshold Evaluation
+``` sql
+WITH scored AS (
+    SELECT
+        Class,
+        Amount,
+        -- Use -V14 as anomaly score (lower V14 = more likely fraud)
+        V14 AS Anomaly_Score
+    FROM `fraud_detect.complete_table`
+),
+
+thresholds AS (
+    SELECT threshold / 10.0 AS Threshold
+    FROM UNNEST(GENERATE_ARRAY(-30, 30, 1)) AS threshold
+),
+
+threshold_metrics AS (
+    SELECT
+        t.Threshold,
+        SUM(CASE WHEN s.Anomaly_Score >= t.Threshold AND s.Class=1 THEN 1 ELSE 0 END) AS TP,
+        SUM(CASE WHEN s.Anomaly_Score >= t.Threshold AND s.Class=0 THEN 1 ELSE 0 END) AS FP,
+        SUM(CASE WHEN s.Anomaly_Score <  t.Threshold AND s.Class=1 THEN 1 ELSE 0 END) AS FN,
+        SUM(CASE WHEN s.Anomaly_Score <  t.Threshold AND s.Class=0 THEN 1 ELSE 0 END) AS TN
+    FROM thresholds t
+    CROSS JOIN scored s
+    GROUP BY t.Threshold
+)
+
+SELECT
+    Threshold,
+    TP, FP, FN, TN,
+    ROUND(TP * 100.0 / NULLIF(TP + FN, 0), 2)   AS Recall_Pct,
+    ROUND(TP * 100.0 / NULLIF(TP + FP, 0), 2)   AS Precision_Pct,
+    ROUND(2.0 * TP / NULLIF(2*TP + FP + FN, 0), 4) AS F1,
+    ROUND(5.0 * TP / NULLIF(5*TP + 4*FN + FP, 0), 4) AS F2,
+    -- Financial cost at this threshold
+    ROUND(FN * 122.21 + FP * 15.00 + (TP+FP) * 5.00, 2)
+                                                 AS Total_Cost_GBP,
+    -- Savings vs doing nothing
+    ROUND((TP + FN) * 122.21 -
+          (FN * 122.21 + FP * 15.00 + (TP+FP) * 5.00), 2)
+                                                 AS Net_Savings_GBP
+FROM threshold_metrics
+WHERE TP > 0
+ORDER BY Net_Savings_GBP DESC
+LIMIT 20;
+```
+<img width="1449" height="466" alt="image" src="https://github.com/user-attachments/assets/bb4bc187-3b17-42be-8fc7-5eae25486618" /><img width="301" height="371" alt="image" src="https://github.com/user-attachments/assets/360244f8-08dc-406c-b868-1f6f4096e805" />
+
+11). Fraud Hostspot Detection
+``` sql
+WITH fraud_zones AS (
+    SELECT
+        CASE
+            WHEN V14 < -10 AND V17 < -5          THEN 'Zone_A_Critical'
+            WHEN V14 < -5  AND V17 < -3          THEN 'Zone_B_High'
+            WHEN V14 < -3  AND V17 < -1          THEN 'Zone_C_Elevated'
+            WHEN V14 BETWEEN -3 AND 0            THEN 'Zone_D_Moderate'
+            ELSE                                      'Zone_E_Normal'
+        END                                      AS Fraud_Zone,
+        Class,
+        Amount,
+        V14, V17
+    FROM `fraud_detect.complete_table`
+)
+
+SELECT
+    Fraud_Zone,
+    COUNT(*)                                     AS Total_Transactions,
+    SUM(Class)                                   AS Fraud_Count,
+    ROUND(AVG(Class) * 100, 4)                   AS Fraud_Rate_Pct,
+    ROUND(AVG(Amount), 2)                        AS Avg_Amount,
+    ROUND(SUM(CASE WHEN Class=1 THEN Amount ELSE 0 END), 2)
+                                                 AS Total_Fraud_Value,
+    ROUND(AVG(V14), 3)                           AS Avg_V14,
+    ROUND(AVG(V17), 3)                           AS Avg_V17,
+    -- Priority flag for rule-based system
+    CASE
+        WHEN AVG(Class) > 0.5  THEN 'AUTO_BLOCK'
+        WHEN AVG(Class) > 0.10 THEN 'AUTO_REVIEW'
+        WHEN AVG(Class) > 0.02 THEN 'ENHANCED_MONITORING'
+        ELSE                        'STANDARD_PROCESSING'
+    END                                          AS Recommended_Action
+FROM fraud_zones
+GROUP BY Fraud_Zone
+ORDER BY Fraud_Rate_Pct DESC;
+```
+<img width="1535" height="297" alt="image" src="https://github.com/user-attachments/assets/312cf076-89c1-4047-aefe-fe895768b6db" />
+
+12). Recall vs Precision Trade off 
+``` sql
+WITH base AS (
+    SELECT
+        SUM(Class)                               AS Total_Fraud,
+        COUNT(*) - SUM(Class)                    AS Total_Legit,
+        SUM(CASE WHEN Class=1 THEN Amount ELSE 0 END)
+                                                 AS Total_Fraud_Value
+    FROM `fraud_detect.complete_table`
+)
+
+SELECT
+    'High Recall Strategy (catch 95% fraud)'     AS Strategy,
+    'Recall=95%, Precision=30%'                  AS Model_Performance,
+    ROUND(Total_Fraud * 0.05)                    AS Fraud_Missed,
+    ROUND(Total_Fraud * 0.95 / 0.30 * 0.70)     AS False_Alarms,
+    ROUND(Total_Fraud * 0.05 * 122.21 +
+          Total_Fraud * 0.95 / 0.30 * 0.70 * 15, 2)
+                                                 AS Total_Cost_GBP,
+    'High customer friction, low fraud loss'     AS Business_Impact
+FROM base
+
+UNION ALL
+
+SELECT
+    'Balanced Strategy (F1 optimal)',
+    'Recall=80%, Precision=85%',
+    ROUND(Total_Fraud * 0.20),
+    ROUND(Total_Fraud * 0.80 / 0.85 * 0.15),
+    ROUND(Total_Fraud * 0.20 * 122.21 +
+          Total_Fraud * 0.80 / 0.85 * 0.15 * 15, 2),
+    'Balanced — good for most use cases'
+FROM base
+
+UNION ALL
+
+SELECT
+    'High Precision Strategy (minimize FP)',
+    'Recall=50%, Precision=99%',
+    ROUND(Total_Fraud * 0.50),
+    ROUND(Total_Fraud * 0.50 / 0.99 * 0.01),
+    ROUND(Total_Fraud * 0.50 * 122.21 +
+          Total_Fraud * 0.50 / 0.99 * 0.01 * 15, 2),
+    'Low friction, high fraud loss'
+FROM base;
+```
+<img width="1292" height="244" alt="image" src="https://github.com/user-attachments/assets/67208eb6-90b4-46cd-be40-b6973ecb7ae5" />
 
 ### Insights:
 
