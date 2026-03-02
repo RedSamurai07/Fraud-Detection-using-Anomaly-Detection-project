@@ -45,6 +45,8 @@ The analysis demonstrates that traditional metrics like "Accuracy" are misleadin
 
 3). Python: Used for data cleaning, advanced feature engineering, and machine learning. Libraries: Pandas, Numpy, Scikit-learn (K-Means, GMM, Agglomerative), Scipy (Stats), Matplotlib, Seaborn.
 
+4). Tableau: Data Visualization, Feature Engineering
+
 ### Analysis
 **Python**
 
@@ -2029,6 +2031,9 @@ SELECT
 FROM base;
 ```
 <img width="1292" height="244" alt="image" src="https://github.com/user-attachments/assets/67208eb6-90b4-46cd-be40-b6973ecb7ae5" />
+
+**Tableau:**
+<img width="1266" height="609" alt="image" src="https://github.com/user-attachments/assets/213f8614-e72e-4829-927d-2223ccc34b27" />
 
 ### Insights:
 
