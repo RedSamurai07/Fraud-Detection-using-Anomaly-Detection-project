@@ -2033,7 +2033,8 @@ FROM base;
 <img width="1292" height="244" alt="image" src="https://github.com/user-attachments/assets/67208eb6-90b4-46cd-be40-b6973ecb7ae5" />
 
 **Tableau:**
-<img width="1266" height="609" alt="image" src="https://github.com/user-attachments/assets/213f8614-e72e-4829-927d-2223ccc34b27" />
+<img width="1285" height="821" alt="image" src="https://github.com/user-attachments/assets/f26e76d0-b376-4517-9e5c-1f5e94ef5e3b" />
+
 
 ### Insights:
 
