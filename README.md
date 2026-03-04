@@ -28,15 +28,6 @@ The analysis demonstrates that traditional metrics like "Accuracy" are misleadin
 ### Data structure and initial checks
 [Dataset](https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud)
 
- - The initial checks of your transactions.csv dataset reveal the following:
-
-| Features | Description | Data types |
-| -------- | -------- | -------- | 
-| Time | Seconds elapsed between the transaction and the first transaction in the dataset. | float64 | 
-| V1 – V28 | Numerical features resulting from a PCA transformation to protect user identity and sensitive information. | float64 | 
-| Amount | The transaction amount, which can be used for cost-sensitive learning. | float64 | 
-| Class | The target variable: 1 for fraudulent transactions and 0 for legitimate ones. | int64 | 
-
 ### Tools
 
 1). Excel/CSV: Initial data inspection and output storage.
