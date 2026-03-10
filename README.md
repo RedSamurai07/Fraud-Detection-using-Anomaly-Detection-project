@@ -1,5 +1,7 @@
 # Fraud Detection using Anomaly Detection project
 
+![CI](https://github.com/RedSamurai07/Fraud-Detection-using-Anomaly-Detection-project/actions/workflows/ci-cd.yml/badge.svg)
+
 ## Table of contents
 - [Project Overview](#project-overview)
 - [Executive Summary](#executive-summary)

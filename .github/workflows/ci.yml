@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          lfs: true  # Important: Pull Git LFS files (your model)
+          lfs: true
 
       - name: Set up Python 3.9
         uses: actions/setup-python@v4
@@ -26,7 +26,7 @@ jobs:
           pip install fastapi uvicorn pydantic httpx pytest pandas
 
       - name: Run tests
-        run: pytest test_api.py -v --tb=short
+        run: pytest tests/ -v --tb=short
 
   build:
     needs: test
