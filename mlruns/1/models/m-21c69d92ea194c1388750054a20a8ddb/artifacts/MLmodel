@@ -1,0 +1,24 @@
+artifact_path: file:D:/Github repos/Projects/Fraud Detection using Anomaly Detection
+  project/mlruns/1/models/m-21c69d92ea194c1388750054a20a8ddb/artifacts
+flavors:
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.pkl
+    predict_fn: predict
+    python_version: 3.13.5
+  sklearn:
+    code: null
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 1.6.1
+    skops_trusted_types: null
+mlflow_version: 3.10.1
+model_id: m-21c69d92ea194c1388750054a20a8ddb
+model_size_bytes: 959
+model_uuid: m-21c69d92ea194c1388750054a20a8ddb
+prompts: null
+run_id: bbfb3aa6b8894c05b8b39b9101625ed0
+utc_time_created: '2026-03-10 07:48:49.023112'
