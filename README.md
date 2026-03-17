@@ -32,13 +32,29 @@ The analysis demonstrates that traditional metrics like "Accuracy" are misleadin
 
 ### Tools
 
-1). Excel/CSV: Initial data inspection and output storage.
+- Python: Used for data cleaning, advanced feature engineering, and machine learning. Libraries: Pandas, Numpy, Scikit-learn (K-Means, GMM, Agglomerative), Scipy (Stats), Matplotlib, Seaborn.
 
-2). SQL: Used for production-ready queries including Cohort Analysis, Window Functions for Pareto thresholds, and Rolling Retention.
+- SQL: Used for production-ready queries including Cohort Analysis, Window Functions for Pareto thresholds, and Rolling Retention.
 
-3). Python: Used for data cleaning, advanced feature engineering, and machine learning. Libraries: Pandas, Numpy, Scikit-learn (K-Means, GMM, Agglomerative), Scipy (Stats), Matplotlib, Seaborn.
+- Excel/CSV: Initial data inspection and output storage.
 
-4). Tableau: Data Visualization, Feature Engineering
+- Tableau: Visualization for the final retail data.
+
+- Model Deployment: Docker, EC2, MLflow
+
+- CI/CD: GitHub Actions
+
+- Version Control: Git
+
+- Containerization: Docker
+
+- Infrastructure: AWS EC2
+
+- Model Management: MLflow
+
+- Testing: PyTest
+
+- Documentation: Markdown
 
 ### Analysis
 **Python**
