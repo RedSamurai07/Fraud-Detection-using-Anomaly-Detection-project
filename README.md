@@ -1,17 +1,4 @@
----
-title: Fraud Detection Analytics
-emoji: 🛡️
-colorFrom: blue
-colorTo: indigo
-sdk: gradio
-sdk_version: 4.36.1
-python_version: 3.11
-app_file: app.py
-pinned: false
----
-
 # Fraud Detection using Anomaly Detection project
-
 
 ![CI](https://github.com/RedSamurai07/Fraud-Detection-using-Anomaly-Detection-project/actions/workflows/main.yml/badge.svg)
 
