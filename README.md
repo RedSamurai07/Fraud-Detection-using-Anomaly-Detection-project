@@ -17,6 +17,17 @@
 ### Project Overview
 The project focuses on building a robust machine learning system to identify fraudulent credit card transactions. Given the sensitive nature of financial data, the features provided are principal components (V1–V28) resulting from a PCA transformation, along with the transaction time and amount. The primary challenge addressed is the extreme class imbalance, where fraudulent transactions represent a tiny fraction of the total dataset.
 
+### Production Architecture
+To demonstrate production readiness, this Fraud Detection framework is fully productized and automated:
+
+* **Containerization:** Packaged with Docker for seamless replication across local and cloud environments.
+* **Cloud Deployment:** Hosted on an AWS EC2 instance running a FastAPI backend microservice.
+* **Experiment Tracking:** Integrated with an MLflow artifact registry to log statistical parameters and live test variations.
+* **CI/CD Pipeline:** Automated via GitHub Actions to execute statistical unit tests on every code push.
+
+👉 **For the complete step-by-step technical setup, Dockerfiles, and cloud infrastructure configurations, read the full [Production Deployment Guide](DEPLOYMENT.md).**
+
+
 ### Executive Summary
 
 The analysis demonstrates that traditional metrics like "Accuracy" are misleading for fraud detection due to the Accuracy Paradox—a model predicting all transactions as legitimate would achieve 99.83% accuracy but fail to catch any fraud. To counter this, the project evaluates models based on Precision-Recall (PR) AUC and F-beta scores, prioritizing the identification of fraudulent cases while managing the operational costs of false alarms. The proposed solution includes a multi-tiered decisioning framework (Approve/Review/Block) to balance financial loss with customer experience.
