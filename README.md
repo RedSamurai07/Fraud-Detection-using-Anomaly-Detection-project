@@ -45,8 +45,6 @@ The analysis demonstrates that traditional metrics like "Accuracy" are misleadin
 
 Dataset: Proprietary operational data (anonymized for privacy compliance).
 
-[Dataset](https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud)
-
 ### Tools
 
 - Python: Used for data cleaning, advanced feature engineering, and machine learning. Libraries: Pandas, Numpy, Scikit-learn (K-Means, GMM, Agglomerative), Scipy (Stats), Matplotlib, Seaborn.
