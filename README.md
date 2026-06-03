@@ -2043,7 +2043,8 @@ FROM base;
 ```
 <img width="1292" height="244" alt="image" src="https://github.com/user-attachments/assets/67208eb6-90b4-46cd-be40-b6973ecb7ae5" />
 
-**Tableau:**
+**Tableau Dashboard:**
+
 <img width="1285" height="821" alt="image" src="https://github.com/user-attachments/assets/f26e76d0-b376-4517-9e5c-1f5e94ef5e3b" />
 
 
