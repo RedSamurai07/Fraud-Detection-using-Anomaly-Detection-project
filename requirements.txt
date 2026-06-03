@@ -6,4 +6,7 @@ joblib
 Pillow
 pytest
 httpx
+fastapi
+uvicorn
+
 
