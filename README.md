@@ -6,6 +6,7 @@
 
 ## Table of contents
 - [Project Overview](#project-overview)
+- [Production Architecture](#production-architecture)
 - [Executive Summary](#executive-summary)
 - [Goal](goal)
 - [Data Structure](data-structure)
@@ -41,7 +42,8 @@ The analysis demonstrates that traditional metrics like "Accuracy" are misleadin
 - Operational Goal: Create an automated system capable of making real-time decisions to block or flag transactions for manual investigation.
 
 ### Data structure and initial checks
-[Dataset](https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud)
+
+Dataset: Proprietary operational data (anonymized for privacy compliance).
 
 ### Tools
 
