@@ -156,6 +156,7 @@ cython_debug/
 models/
 mlruns/
 *.csv
+!creditcard.csv
 *.zip
 *.pem
 *.joblib

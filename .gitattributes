@@ -1,3 +1,4 @@
 # Auto detect text files and perform LF normalization
 * text=auto
 models/*.pkl filter=lfs diff=lfs merge=lfs -text
+creditcard.csv filter=lfs diff=lfs merge=lfs -text
