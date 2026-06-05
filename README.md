@@ -18,6 +18,34 @@
 ### Project Overview
 The project focuses on building a robust machine learning system to identify fraudulent credit card transactions. Given the sensitive nature of financial data, the features provided are principal components (V1–V28) resulting from a PCA transformation, along with the transaction time and amount. The primary challenge addressed is the extreme class imbalance, where fraudulent transactions represent a tiny fraction of the total dataset.
 
+### Project Architecture
+
+```mermaid
+graph LR
+    subgraph Development [1. Data & Modeling]
+        A[credicard.csv Data] --> B[Hypothesis Testing & Statsmodels]
+        B --> C[Machine Learning / Deep Learning Models]
+    end
+
+    subgraph Tracking [2. Experimentation]
+        C --> D((MLflow Tracking))
+    end
+
+    subgraph DevOps [3. CI/CD & Containers]
+        D --> E[GitHub Actions CI/CD]
+        E --> F[Docker Containerization]
+    end
+
+    subgraph Deployment [4. Production]
+        F --> G[AWS Cloud Deployment]
+    end
+
+    style D fill:#012A4A,stroke:#333,stroke-width:2px,color:#fff
+    style E fill:#2671E5,stroke:#333,stroke-width:2px,color:#fff
+    style F fill:#0db7ed,stroke:#333,stroke-width:2px,color:#fff
+    style G fill:#FF9900,stroke:#333,stroke-width:2px,color:#fff
+```
+
 ### Production Architecture
 To demonstrate production readiness, this Fraud Detection framework is fully productized and automated:
 
