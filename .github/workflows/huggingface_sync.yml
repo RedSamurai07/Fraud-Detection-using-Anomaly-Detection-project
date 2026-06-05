@@ -1,7 +1,15 @@
 name: Sync to Hugging Face hub
+
 on:
   push:
     branches: [main]
+    # 1. Only trigger if your actual app/model assets change
+    paths:
+      - 'app.py'
+      - 'main.py'
+      - 'train_model.py'
+      - 'models/**'
+      - 'requirements.txt'
   workflow_dispatch:
 
 jobs:
@@ -25,5 +33,12 @@ jobs:
           git config --global user.email "action@github.com"
           git config --global user.name "GitHub Action"
           git add README.md
-          git commit -m "Add HF metadata for sync"
+          
+          # 2. Check if there are changes to commit so it doesn't fail if nothing changed
+          if ! git diff-index --quiet HEAD --; then
+            # Adding [skip ci] prevents GitHub Actions from re-triggering itself
+            git commit -m "Add HF metadata for sync [skip ci]"
+          fi
+          
+          # 3. Push securely to Hugging Face
           git push -f https://Redlion007:$HF_TOKEN@huggingface.co/spaces/Redlion007/Fraud_detection main
