@@ -9,6 +9,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    
     steps:
     - uses: actions/checkout@v4
     
@@ -21,8 +22,17 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
+        # Explicitly ensure pytest-cov is installed for coverage tracking
+        pip install pytest-cov
         
-    - name: Run Tests
+    - name: Run Tests with Coverage
       run: |
-        # Run tests - test_predict_success will skip if model is missing
-        pytest tests/
+        # Tracks coverage for your core scripts and outputs a coverage.xml file
+        pytest tests/ --cov=app --cov=main --cov=train_model --cov-report=xml
+        
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        file: ./coverage.xml
+        fail_ci_if_error: true
