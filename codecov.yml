@@ -2,7 +2,7 @@ coverage:
   status:
     project:
       default:
-        target: 85%       
+        target: 85%     
         threshold: 0%     
         informational: false
     patch:
@@ -19,6 +19,10 @@ ignore:
   - "models/**"
   - "output/**"
   - "mlruns/**"
+
+cli:
+  plugins:
+    pycov: true
 
 comment:
   layout: "header, diff, flags, files"
