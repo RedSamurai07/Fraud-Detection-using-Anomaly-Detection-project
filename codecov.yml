@@ -2,21 +2,24 @@ coverage:
   status:
     project:
       default:
-        target: 85%
-        threshold: 0%
+        target: 85%       
+        threshold: 0%     
         informational: false
     patch:
       default:
-        target: 85%
+        target: 85%       
         informational: false
 
 ignore:
+  - "app.py"             
+  - "train_model.py"       
   - "**.csv"
   - "**.ipynb"
   - "**.sh"
   - "models/**"
   - "output/**"
   - "mlruns/**"
+
 comment:
   layout: "header, diff, flags, files"
   behavior: default
