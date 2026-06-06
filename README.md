@@ -2,6 +2,8 @@
 
 ![CI](https://github.com/RedSamurai07/Fraud-Detection-using-Anomaly-Detection-project/actions/workflows/main.yml/badge.svg)
 
+[![codecov](https://codecov.io/gh/RedSamurai07/Fraud-Detection-using-Anomaly-Detection-project/graph/badge.svg?token=R1YJF03783)](https://codecov.io/gh/RedSamurai07/Fraud-Detection-using-Anomaly-Detection-project)
+
 [![Hugging Face Space](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Space-blue)](https://huggingface.co/spaces/Redlion007/Fraud_detection)
 
 ## Table of contents
