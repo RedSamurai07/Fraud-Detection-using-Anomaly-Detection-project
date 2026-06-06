@@ -246,7 +246,40 @@ Transactions are scored and routed into one of three tiers:
 
 ---
 
-## 11. Final Decision Summary
+## 11. Ethical Considerations & Limitations
+
+- **Class Imbalance Bias:** At 0.17% fraud rate, even small threshold shifts dramatically affect recall vs precision. Threshold must be tuned per operational cost tolerance.
+- **PCA Anonymization:** V1–V28 are PCA-transformed for privacy — interpretability is limited without the original feature names. SHAP values can still rank feature importance on the transformed space.
+- **Temporal Drift:** The dataset spans only 2 days. Real-world fraud patterns evolve continuously; monthly retraining is strongly recommended.
+- **False Positive Cost:** Blocking legitimate transactions directly impacts customer experience (£15/case). The 3-tier APPROVE/REVIEW/BLOCK framework mitigates this.
+- **No Demographic Features:** Dataset contains no protected attributes — formal fairness analysis is not applicable, but should be revisited if raw features become available.
+- **Night-Time Bias:** Statistically, night-time transactions have 2.1× higher fraud rates, but blocking them wholesale would unfairly impact shift workers and international cardholders.
+
+---
+
+## 12. Infrastructure & Tools
+
+| Category | Tool / Library |
+|---|---|
+| Language | Python 3.10 |
+| ML | Scikit-learn (LR, RF, IsoForest, LOF, OneClassSVM) |
+| Boosting | XGBoost, LightGBM |
+| Imbalance | imbalanced-learn (SMOTE, ADASYN, BorderlineSMOTE, SMOTETomek) |
+| Statistics | SciPy (Mann-Whitney U, KS Test) |
+| API Framework | FastAPI + Uvicorn |
+| Experiment Tracking | MLflow |
+| Testing | Pytest + pytest-cov (≥85% coverage enforced) |
+| Coverage Reporting | Codecov |
+| CI/CD | GitHub Actions |
+| Containerisation | Docker |
+| Cloud Infrastructure | AWS EC2 |
+| Model Serialisation | Joblib |
+| Data Processing | Pandas, NumPy |
+| Visualisation | Matplotlib, Seaborn |
+
+---
+
+## 13. Final Decision Summary
 
 ```
 ══════════════════════════════════════════════════════════════
@@ -276,36 +309,3 @@ PRODUCTION RECOMMENDATIONS:
 • Log all REVIEW decisions for analyst investigation
 ══════════════════════════════════════════════════════════════
 ```
-
----
-
-## 12. Ethical Considerations & Limitations
-
-- **Class Imbalance Bias:** At 0.17% fraud rate, even small threshold shifts dramatically affect recall vs precision. Threshold must be tuned per operational cost tolerance.
-- **PCA Anonymization:** V1–V28 are PCA-transformed for privacy — interpretability is limited without the original feature names. SHAP values can still rank feature importance on the transformed space.
-- **Temporal Drift:** The dataset spans only 2 days. Real-world fraud patterns evolve continuously; monthly retraining is strongly recommended.
-- **False Positive Cost:** Blocking legitimate transactions directly impacts customer experience (£15/case). The 3-tier APPROVE/REVIEW/BLOCK framework mitigates this.
-- **No Demographic Features:** Dataset contains no protected attributes — formal fairness analysis is not applicable, but should be revisited if raw features become available.
-- **Night-Time Bias:** Statistically, night-time transactions have 2.1× higher fraud rates, but blocking them wholesale would unfairly impact shift workers and international cardholders.
-
----
-
-## 13. Infrastructure & Tools
-
-| Category | Tool / Library |
-|---|---|
-| Language | Python 3.10 |
-| ML | Scikit-learn (LR, RF, IsoForest, LOF, OneClassSVM) |
-| Boosting | XGBoost, LightGBM |
-| Imbalance | imbalanced-learn (SMOTE, ADASYN, BorderlineSMOTE, SMOTETomek) |
-| Statistics | SciPy (Mann-Whitney U, KS Test) |
-| API Framework | FastAPI + Uvicorn |
-| Experiment Tracking | MLflow |
-| Testing | Pytest + pytest-cov (≥85% coverage enforced) |
-| Coverage Reporting | Codecov |
-| CI/CD | GitHub Actions |
-| Containerisation | Docker |
-| Cloud Infrastructure | AWS EC2 |
-| Model Serialisation | Joblib |
-| Data Processing | Pandas, NumPy |
-| Visualisation | Matplotlib, Seaborn |
