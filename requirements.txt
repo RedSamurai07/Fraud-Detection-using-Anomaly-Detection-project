@@ -8,5 +8,5 @@ pytest
 httpx
 fastapi
 uvicorn
-
+pytest-cov
 
