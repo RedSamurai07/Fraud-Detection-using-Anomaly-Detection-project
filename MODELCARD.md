@@ -106,7 +106,7 @@ Imbalance Strategy Comparison (SMOTE, BorderlineSMOTE, ADASYN, SMOTETomek)
 ┌─────────────────────────────────────────────────┐
 │  Philosophy 1: Rule-Based Detection             │
 │  Philosophy 2: Traditional ML (Supervised +     │
-│                Unsupervised Anomaly Detection)   │
+│                Unsupervised Anomaly Detection)  │
 │  Philosophy 3: Autoencoder (TF — optional)      │
 └─────────────────────────────────────────────────┘
      │
